@@ -3,7 +3,7 @@ import sqlite3
 import threading
 from contextlib import contextmanager
 
-GRAPH_DB = os.getenv("GRAPH_DB", "graphs.db")
+GRAPH_DB = os.getenv("GRAPH_DB", "data/graphs.db")
 
 _thread_local = threading.local()
 
