@@ -1,0 +1,10 @@
+flowchart TB
+    accTitle: How get_connection reuses SQLite connections
+    accDescr: A caller asks for a database path. If this thread already has a connection for that path it is returned. Otherwise the folder is created, a connection is opened with WAL, NORMAL sync, in-memory temp storage and a busy timeout, cached for this thread, and returned.
+    A["get_connection(path)"] --> B{"This thread already<br>has one for path?"}
+    B -- yes --> R["return cached connection"]
+    B -- no --> C["create parent folder"]
+    C --> D["sqlite3.connect<br>autocommit, Row rows"]
+    D --> E["PRAGMA journal_mode=WAL<br>synchronous=NORMAL<br>temp_store=MEMORY<br>busy_timeout"]
+    E --> F["cache for this thread"]
+    F --> R

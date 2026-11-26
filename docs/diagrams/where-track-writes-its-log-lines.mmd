@@ -1,0 +1,7 @@
+flowchart LR
+    accTitle: Where @track writes its log lines
+    accDescr: Each call to a tracked function produces one entry. It is written to a per client and status file, to a per scope file when scope, event group and service are set, and to a single success or error file.
+    T["@track() call"] --> E["entry: client, function,<br>status, duration_ms,<br>+ log context"]
+    E --> G1["logs/talkingdb/{client}/{status}/{function}.jsonl"]
+    E -. "if scope, event_group_id<br>and service are set" .-> G2["logs/talkingdb/{scope}/{event_group_id}/{service}/..."]
+    E --> G3["logs/talkingdb/{status}.jsonl"]
