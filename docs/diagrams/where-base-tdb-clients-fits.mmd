@@ -1,4 +1,4 @@
-flowchart LR
+flowchart TB
     accTitle: Where base-tdb-clients fits
     accDescr: Services call base-tdb-clients, which opens SQLite files on disk and, when configured, a MinIO bucket. base-tdb-helpers and every package and module use it.
     S["TalkingDB services<br>(packages, modules)"] --> H["base-tdb-helpers"]
