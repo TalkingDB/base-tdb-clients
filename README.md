@@ -7,9 +7,9 @@ Shared connections to outside systems for TalkingDB services: [SQLite](https://w
 ![Import path: talkingdb.clients](https://img.shields.io/badge/import-talkingdb.clients-555)
 
 <p align="center">
-  <img src="docs/images/demo.gif" alt="Real terminal recording: the example code is shown, then run, and its actual output printed">
+  <img src="docs/images/demo.gif" alt="Animated demo of a real run: each thread gets its own cached SQLite connection in WAL mode with a 30 second busy timeout, the -wal and -shm files appear on disk, and @track files successes and errors per client and function">
 </p>
-<p align="center"><sub>A real run, recorded on 26 Nov 2026 at commit <code>a60b646</code> with Python 3.13.18: the first example in <a href="docs/usage-and-examples.md">Usage and examples</a>, typed and run in a terminal.</sub></p>
+<p align="center"><sub>A real run at <code>a60b646</code> with Python 3.13.18, 26 Nov 2026.</sub></p>
 
 | Start here | Go deeper |
 | :--- | :--- |
