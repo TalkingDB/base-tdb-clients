@@ -1,106 +1,48 @@
-# base-tdb-clients
+<!-- short-readme -->
+<h1 align="center">base-tdb-clients</h1>
 
-Shared connections to outside systems for TalkingDB services: [SQLite](https://www.sqlite.org/about.html) databases, [MinIO](https://en.wikipedia.org/wiki/MinIO) file storage, and structured logging.
+<p align="center"><b>Shared connections to SQLite, MinIO and logs for TalkingDB services.</b></p>
 
-![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue)
-![Python 3.12 or 3.13](https://img.shields.io/badge/python-3.12%20%7C%203.13-3776AB)
-![Import path: talkingdb.clients](https://img.shields.io/badge/import-talkingdb.clients-555)
+<p align="center"><a href="#try-it">Try it</a> · <a href="docs/architecture.md">How it works</a> · <a href="docs/usage-and-examples.md">Usage and examples</a> · <a href="docs/troubleshooting.md">Troubleshooting</a> · <a href="docs/reference.md">Full reference</a></p>
+
+<p align="center"><a href="https://github.com/TalkingDB/base-tdb-clients/stargazers"><img src="https://img.shields.io/github/stars/TalkingDB/base-tdb-clients?style=social" alt="GitHub stars"></a> <a href="https://www.gnu.org/licenses/agpl-3.0.html"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue" alt="AGPL-3.0"></a></p>
 
 <p align="center">
   <img src="docs/images/demo.gif" alt="Animated demo of a real run: each thread gets its own cached SQLite connection in WAL mode with a 30 second busy timeout, the -wal and -shm files appear on disk, and @track files successes and errors per client and function">
 </p>
 <p align="center"><sub>A real run at <code>a60b646</code> with Python 3.13.18, 26 Nov 2026.</sub></p>
 
-| Start here | Go deeper |
-| :--- | :--- |
-| [What it is](#what-it-is) | [Architecture](docs/architecture.md) |
-| [Where this fits](#where-this-fits) | [Usage and examples](docs/usage-and-examples.md) |
-| [Quickstart](#quickstart) | [Troubleshooting](docs/troubleshooting.md) |
-| [Configuration](#configuration) | [What this repo is not](#what-this-repo-is-not) |
+One place to open [SQLite](https://www.sqlite.org/about.html) databases (one cached connection per thread, [WAL mode](https://www.sqlite.org/wal.html), a 30 second busy timeout), talk to [MinIO](https://en.wikipedia.org/wiki/MinIO) file storage, and write structured call logs.
 
-All pages: [docs/](docs/README.md).
+## What it does
 
-## What it is
+- **SQLite**: `get_connection(path)` gives each thread its own cached connection ([usage](docs/usage-and-examples.md)).
+- **MinIO**: object storage, only when configured.
+- **Logging**: `@track` files every call's success or error as JSON lines ([how it works](docs/architecture.md)).
 
-A **client** is the small piece of code that opens and reuses a connection to something outside Python, so every service does it the same way. This library has three:
-
-| Client | File | What it does |
-| :--- | :--- | :--- |
-| SQLite | [`talkingdb/clients/sqlite.py`](talkingdb/clients/sqlite.py) | Opens one connection per database file per thread, with WAL mode and a busy timeout already set |
-| MinIO | [`talkingdb/clients/minio.py`](talkingdb/clients/minio.py) | An optional, shared client for MinIO, an S3 compatible file store. Off unless both keys are set |
-| Logging | [`talkingdb/logger/`](talkingdb/logger/) | A coloured console logger and a `@track()` decorator that writes one JSON line per call to `logs/talkingdb/` |
-
-**WAL** (write ahead logging) is a SQLite mode that lets readers keep reading while one writer writes. A **busy timeout** makes a writer wait for the lock instead of failing at once.
-
-## Where this fits
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/where-base-tdb-clients-fits-dark.svg">
-  <img alt="Services call base-tdb-clients, which opens SQLite files on disk and, when configured, a MinIO bucket. base-tdb-helpers and every package and module use it." src="docs/images/where-base-tdb-clients-fits.svg">
-</picture>
-
-<sub>Diagram source: [where-base-tdb-clients-fits.mmd](docs/diagrams/where-base-tdb-clients-fits.mmd). Edit it and re-render with the steps in [docs/diagrams](docs/diagrams/README.md).</sub>
-
-In words: services and helpers ask this library for connections; it talks to SQLite files on local disk, to MinIO only when configured, and writes call logs as JSON lines.
-
-## Quickstart
-
-You need Python 3.12 or 3.13 and [Poetry](https://python-poetry.org/docs/#installation).
+## Try it
 
 ```bash
 git clone https://github.com/TalkingDB/base-tdb-clients.git
 cd base-tdb-clients
 poetry install
-poetry run python -c "from talkingdb.clients.sqlite import get_connection; print(get_connection('data/demo.db').execute('PRAGMA journal_mode').fetchone()[0])"
 ```
 
-That prints `wal` and creates `data/demo.db` (the folder is created for you).
+Then open a database: `get_connection('data/demo.db')` prints `wal` for its journal mode ([example](docs/usage-and-examples.md)).
 
-## Configuration
+## Where it fits
 
-All settings are environment variables, read once when the module is first imported.
+Sits under [base-tdb-helpers](https://github.com/TalkingDB/base-tdb-helpers) and every service; uses [base-tdb-models](https://github.com/TalkingDB/base-tdb-models) for its data shapes.
 
-| Variable | Default | Used for |
-| :--- | :--- | :--- |
-| `GRAPH_DB` | `data/graphs.db` | Document and [knowledge graphs](https://en.wikipedia.org/wiki/Knowledge_graph) |
-| `ENTITY_DB` | `data/entities.db` | Entities and facts |
-| `DICTIONARY_DB` | `data/dictionary.db` | Spelling correction dictionary |
-| `REGEX_DB` | `data/regex.db` | Regular expression rules |
-| `TDB_SQLITE_BUSY_TIMEOUT_MS` | `30000` | How long a writer waits for the lock |
-| `MINIO_ENDPOINT` | set in [minio.py](talkingdb/clients/minio.py) | MinIO host |
-| `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY` | empty | Both must be set to turn MinIO on |
-| `MINIO_SECURE` | `true` | Use HTTPS to MinIO |
-| `MINIO_BUCKET` | `ttt` | Bucket name |
+## Learn more
 
-> [!IMPORTANT]
-> Set these before the first `import talkingdb...` in your process. The values are read at import time, so changing `os.environ` afterwards has no effect.
-
-## What this repo is not
-
-- **Not a data model.** The shapes stored in these databases live in [base-tdb-models](https://github.com/TalkingDB/base-tdb-models).
-- **Not an ORM or migration tool.** It opens connections; it does not create tables or migrate them.
-- **Not a server.** Nothing here listens on a port.
-- **Not a required MinIO dependency.** Services run without MinIO; storage features turn themselves off with a warning.
-
-## Related repositories
-
-| Repository | Relationship |
+| Page | Read it to |
 | :--- | :--- |
-| [base-tdb-models](https://github.com/TalkingDB/base-tdb-models) | Models that read and write through these connections |
-| [base-tdb-helpers](https://github.com/TalkingDB/base-tdb-helpers) | File store, job store and graph cache built on these clients |
-| [module-ttt](https://github.com/TalkingDB/module-ttt) | Uses MinIO for original files and SQLite for graphs and jobs |
-| [package-named-entity-linker](https://github.com/TalkingDB/package-named-entity-linker) | Reads `ENTITY_DB`, `DICTIONARY_DB` and `REGEX_DB` |
-
-## Further reading
-
-- [SQLite write ahead logging](https://www.sqlite.org/wal.html)
-- [SQLite PRAGMA busy_timeout](https://www.sqlite.org/pragma.html#pragma_busy_timeout)
-- [MinIO Python SDK](https://github.com/minio/minio-py)
-- [Python sqlite3 and threads](https://docs.python.org/3/library/sqlite3.html#sqlite3.connect)
-
-## Code contributor
-
-mayank.g@smarter.codes
+| [How it works](docs/architecture.md) | see the parts and how data moves |
+| [Usage and examples](docs/usage-and-examples.md) | copy working examples |
+| [Troubleshooting](docs/troubleshooting.md) | fix a problem |
+| [Full reference](docs/reference.md) | read everything that used to be on this page |
+| [All docs](docs/README.md) | see every page |
 
 ## Support TalkingDB
 
